@@ -1,633 +1,488 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>面孔失认症指数问卷 (PI-20)</title>
-    <script src="https://unpkg.com/jspsych@8.2.2"></script>
-    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.1.0"></script>
-    <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@2.1.0"></script>
-    <script src="https://unpkg.com/@jspsych/plugin-preload@2.1.0"></script>
-    <script src="https://unpkg.com/@jspsych/plugin-survey-text@2.1.0"></script>
-    <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@2.1.0"></script>
-    <script src="https://unpkg.com/@jspsych/plugin-survey-likert@2.1.0"></script>
-    <link href="https://unpkg.com/jspsych@8.2.2/css/jspsych.css" rel="stylesheet" type="text/css" />
-    <style>
-      /* 保持原来的样式不变 */
-      body {
-        background-color: white;
-        color: black; 
-      }
-      
-      .jspsych-display-element {
-        background-color: white;
-        color: black;
-      }
-      
-      .jspsych-content {
-        color: black;
-      }
 
-      p {
-        color: black;
-      }
-      
-      .jspsych-survey-multi-choice-option {
-        color: black;
-        margin: 10px 0;
-      }
-      
-      .jspsych-survey-text {
-        color: black;
-      }
-      
-      .jspsych-survey-multi-choice-text {
-        color: black;
-        font-size: 18px;
-      }
+<head>
+  <meta charset="UTF-8">
+  <title>面孔识别问卷</title>
+  <script src="lib/jspsych-8.2.2/jspsych.js"></script>
+  <script src="lib/jspsych-8.2.2/plugin-html-keyboard-response.js"></script>
+  <script src="lib/jspsych-8.2.2/plugin-image-keyboard-response.js"></script>
+  <script src="lib/jspsych-8.2.2/plugin-browser-check.js"></script>
+  <script src="lib/jspsych-8.2.2/plugin-preload.js"></script>
+  <script src="lib/jspsych-8.2.2/plugin-survey-text.js"></script>
+  <script src="lib/jspsych-8.2.2/plugin-survey-multi-choice.js"></script>
+  <script src="lib/jspsych-8.2.2/plugin-fullscreen.js"></script>
+  <script src="lib/jspsych-8.2.2/plugin-call-function.js"></script>
+  <script src="lib/jspsych-8.2.2/plugin-survey-html-form.js"></script>
+  <script src="lib/jspsych-8.2.2/plugin-survey-likert.js"></script>
+  <link href="lib/jspsych-8.2.2/jspsych.css" rel="stylesheet" type="text/css" />
+  <!-- Credamo code -->
+  <script src="/jspsych/static/credamo-jspsych.min.js"></script>
+  <!-- External CSS -->
+  <link rel="stylesheet" href="css/style.css">
+  <!-- load js codes for the task -->
+  <script type="text/javascript" src="param/param.js"></script>
+  <script type="text/javascript" src="param/consent.js"></script>
+  <script type="text/javascript" src="param/utils.js"></script>
+</head>
 
-      .jspsych-btn {
-        visibility: visible !important;
-        opacity: 1 !important;
-        background-color: black; 
-        color: white; 
-        padding: 10px 20px;
-        border: 1px solid #ccc; 
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 16px;
-        margin-top: 20px;
-        transition: all 0.2s ease;
+<body></body>
+<script>
+  // 初始化jsPsych
+  var jsPsych = initJsPsych({
+    use_webaudio: false,
+    on_close: function () {
+      var filename = `${exp_name}_${subj_id}_${getLocalTimestamp()}`;
+      if (isBaoleiji) {
+        saveData(
+          jsPsych.data.get().csv(),
+          `${filename}_onclose.csv`
+        );
+      } else if (isCredamo) {
+        onCredamoEndTrialFinish(jsPsych.data.get().csv());
+      } else {
+        // save data backup locally
+        jsPsych.data.get().localSave('csv', `${filename}_onclose.csv`);
       }
+    },
+  });
 
-      .jspsych-btn:hover {
-        background-color: #333; 
-        color: white; 
-        border-color: #666;
-      }
+  // the information is defined in param/param.js
+  var user_browser = navigator.userAgent;
+  console.log(user_browser);
+  var start_time = getLocalTimestamp();
+  jsPsych.data.addProperties({
+    ExpName: exp_name,
+    isBaoleiji: isBaoleiji,
+    Browser: user_browser,
+    StartsAt: start_time
+  })
 
-      .jspsych-btn:disabled {
-        background-color: #999;
-        cursor: not-allowed;
-      }
+  // ==================== 实验流程 ====================
+  var timeline = [];
 
-      /* 知情同意书样式 */
-      .consent-form {
-        max-width: 800px;
-        margin: 0 auto;
-        text-align: left;
-        padding: 20px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        background-color: #f9f9f9;
-      }
-      
-      .consent-title {
-        text-align: center;
-        font-size: 24px;
-        margin-bottom: 20px;
-        font-weight: bold;
-      }
-      
-      .consent-section {
-        margin-bottom: 15px;
-        line-height: 1.6;
-      }
-      
-      .consent条款 {
-        margin: 10px 0 10px 20px;
-      }
-      
-      .consent-confirmation {
-        margin-top: 20px;
-        padding: 15px;
-        background-color: #eee;
-        border-radius: 4px;
-      }
-      
-      .consent-buttons {
-        display: flex;
-        justify-content: center;
-        gap: 20px;
-        margin-top: 30px;
-      }
+  // check browser
+  // var checkbrowser = {
+  //   type: jsPsychBrowserCheck,
+  //   minimum_width: 1000,
+  //   minimum_height: 600,
+  //   inclusion_function: (data) => {
+  //     return data.mobile === false
+  //   },
+  //   exclusion_message: (data) => {
+  //     if (data.mobile) {
+  //       return '<p>本测验程序须在台式电脑或笔记本上运行。</p>';
+  //     }
+  //   }
+  // };
+  // timeline.push(checkbrowser);
 
-      /* Likert量表样式 */
-      .jspsych-survey-likert-option-label {
-        color: black;
-        font-size: 14px;
-      }
+  // use full screen
+  var fullscreen = {
+    type: jsPsychFullscreen,
+    message: '<p>请按下按钮进入“全屏模式”以开始实验。</p>',
+    button_label: '进入全屏',
+    fullscreen_mode: true
+  };
+  timeline.push(fullscreen);
 
-      .jspsych-survey-likert-statement {
-        color: black;
-        font-size: 18px;
-        margin-bottom: 8px !important; 
-      }
-
-      .jspsych-survey-likert-opts {
-        background-color: #f5f5f5;
-        padding: 6px !important; 
-        border-radius: 4px;
-        margin-bottom: 10px !important; 
-      }
-
-      .jspsych-survey-likert-question {
-        margin-bottom: 12px !important; 
-        padding-bottom: 8px !important; 
-        border-bottom: 1px solid #ddd;
-      }
-      
-      /* 输入框和选择框样式 */
-      input[type="text"], select {
-        background-color: white;
-        color: black;
-        border: 1px solid #ccc;
-        padding: 5px;
-        width: 200px;
-      }
-      
-      input[type="text"]:focus, select:focus {
-        border-color: #666;
-        outline: none;
-      }
-      
-      /* 单选按钮和复选框 */
-      input[type="radio"], input[type="checkbox"] {
-        accent-color: black;
-      }
-
-      .error-message {
-        color: red;
-        font-size: 14px;
-        margin-top: 5px;
-        display: none;
-      }
-      
-      .success-message {
-        color: black;
-        font-weight: bold;
-        margin-top: 20px;
-      }
-      
-      .loading-message {
-        color: #666;
-        font-style: italic;
-        margin-top: 20px;
-      }
-    </style>
-  </head>
-  <body></body>
-  <script>
-    var participant_id = "";
-    var participant_age = "";
-    var participant_gender = "";
-    var participant_handedness = "";
-    var participant_brain_injury = "";
-    var participant_phone = "";
-
-    // Likert量表选项
-    var likert_scale = [
-      "完全不符合", 
-      "基本不符合", 
-      "一般/中度", 
-      "基本符合", 
-      "完全符合"
-    ];
-
-    // 简化的自动下载函数
-    function saveData() {
-      console.log("保存数据...");
-      
-      // 获取所有数据
-      var allData = jsPsych.data.get();
-      
-      // 提取所有survey-likert数据
-      var surveyData = allData.filter({trial_type: 'survey-likert'});
-      
-      // 创建包含所有数据的一行
-      var participantData = {
-        participant_id: participant_id,
-        age: participant_age,
-        gender: participant_gender,
-        handedness: participant_handedness,
-        brain_injury_history: participant_brain_injury,
-        phone: participant_phone
-      };
-      
-      // 合并所有问卷数据（name: 'Q1'等会自动成为列名）
-      surveyData.values().forEach(function(trial) {
-        if (trial.response) {
-          for (var key in trial.response) {
-            if (trial.response.hasOwnProperty(key)) {
-              // 将0-4转换为1-5分
-              participantData[key] = trial.response[key] + 1;
-            }
-          }
-        }
+  // consent form
+  var consentform = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: consent_text,
+    choices: "NO_KEYS", // do not use keys
+    data: { task: 'consent_form' },
+    on_load: function () {
+      // 同意按钮逻辑
+      document.getElementById('consent-accept').addEventListener('click', function () {
+        jsPsych.finishTrial({ consent: 'accepted' });
       });
-      
-      console.log("要保存的数据:", participantData);
-      
-      // 直接创建CSV内容
-      var headers = Object.keys(participantData);
-      var csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-      csvContent += headers.join(",") + "\n";
-      
-      // 创建数据行
-      var dataRow = [];
-      headers.forEach(function(header) {
-        dataRow.push(participantData[header] || "");
-      });
-      
-      csvContent += dataRow.join(",") + "\n";
-      
-      // 创建下载
-      var filename = (participant_id || "participant") + "_PI20.csv";
-      var encodedUri = encodeURI(csvContent);
-      var link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", filename);
-      
-      // 触发下载
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      console.log("数据已保存:", filename);
-      return true;
-    }
 
-    // 初始化jsPsych
-    var jsPsych = initJsPsych({
-      on_finish: function() {
-        console.log("实验结束，开始导出数据...");
-        
-        // 显示下载状态
-        var finalPage = document.querySelector('.jspsych-content');
-        if (finalPage) {
-          var statusDiv = document.createElement('div');
-          statusDiv.className = 'loading-message';
-          statusDiv.id = 'download-status';
-          statusDiv.innerHTML = "数据正在保存中，请稍候...";
-          finalPage.appendChild(statusDiv);
-        }
-        
-        // 延迟后触发保存
-        setTimeout(function() {
-          try {
-            var saved = saveData();
-            
-            // 更新保存状态
-            var statusDiv = document.getElementById('download-status');
-            if (statusDiv) {
-              if (saved) {
-                statusDiv.className = 'success-message';
-                statusDiv.innerHTML = "✓ 数据已成功保存！文件名为: " + (participant_id || "participant") + "_PI20.csv";
-              } else {
-                statusDiv.className = 'error-message';
-                statusDiv.innerHTML = "⚠ 数据保存失败";
-              }
-            }
-          } catch (error) {
-            console.error("保存数据时出错:", error);
-            var statusDiv = document.getElementById('download-status');
-            if (statusDiv) {
-              statusDiv.className = 'error-message';
-              statusDiv.innerHTML = "⚠ 保存出错: " + error.message;
-            }
-          }
-        }, 500);
-      }
-    });
-
-    // ==================== 实验流程 ====================
-    var timeline = [];
-
-    // 添加知情同意书环节
-    timeline.push({
-      type: jsPsychHtmlKeyboardResponse,
-      stimulus: `
-        <div class="consent-form">
-          <div class="consent-title">知情同意书</div>
-          
-          <div class="consent-section">
-            本研究主要探讨我们是如何加工面孔的。
-          </div>
-          
-          <div class="consent-section">
-            本实验属于科学研究，目的在于探索人类心理与行为的普遍规律，您在实验中的所有反应和回答没有好坏之分。为保证您在实验中的权益，请仔细阅读以下条款：
-          </div>
-          
-          <div class="consent条款">
-            01. 本研究本着自愿参与的原则，当您感到不适产生放弃参与实验的想法时，您可随时关闭浏览器以退出实验。
-          </div>
-          
-          <div class="consent条款">
-            02. 如果您有不适于参加该实验的情况（如参与过该实验、色盲等），请联系主试（zstu_facelab@zstu.edu.cn）。
-          </div>
-          
-          <div class="consent条款">
-            03. 实验收集的所有信息都将被匿名保密；您的个人隐私会受到保护。您的名字、照片或者其他身份信息不会在任何发表物或教学材料中出现，除非得到您的书面授权。
-          </div>
-          
-          <div class="consent条款">
-            04. 实验中您将按照要求完成特定任务，该过程中您的行为或生理数据将被记录。同时，本实验也将收集一些您的基本信息，例如年龄、性别、利手状况等。本研究所收集到的一切信息，仅用于科学研究，不做其他任何用途。
-          </div>
-          
-          <div class="consent条款">
-            05. 本人承诺对在本次实验中获得的任何信息予以保密。
-          </div>
-          
-          <div class="consent-confirmation">
-            我确认已经被告知本研究的内容、目的、可能的风险和不适，以及潜在的益处，且关心的所有问题均已得到满意的回答。我已经详细阅读了本《被试知情同意书》，同意参与该研究。
-          </div>
-          
-          <div class="consent-buttons">
-            <button class="jspsych-btn" id="consent-reject">不同意</button>
-            <button class="jspsych-btn" id="consent-accept">同意</button>
-          </div>
-        </div>
-      `,
-      choices: "NO_KEYS",
-      on_load: function() {
-        // 同意按钮逻辑
-        document.getElementById('consent-accept').addEventListener('click', function() {
-          jsPsych.finishTrial();
-        });
-        
-        // 不同意按钮逻辑
-        document.getElementById('consent-reject').addEventListener('click', function() {
-          document.querySelector('.jspsych-content').innerHTML = `
-            <p>您已选择不参与本实验。</p>
-            <p>感谢您的时间。您可以关闭本页面。</p>
+      // 不同意按钮逻辑
+      document.getElementById('consent-reject').addEventListener('click', function () {
+        // 显示拒绝参与的信息
+        document.querySelector('.jspsych-content').innerHTML = `
+            <p>您已选择不参与本测验。</p>
+            <p>感谢您的时间。您现在可以关闭本页面。</p>
           `;
-        });
-      }
-    });
+      });
+    }
+  };
+  timeline.push(consentform);
 
-    // 1. 学号输入 - 添加验证
-    timeline.push({
-      type: jsPsychHtmlKeyboardResponse,
-      stimulus: `
-        <div style="max-width:600px; margin:0 auto; padding:20px;">
-          <h3 style="text-align:center;">基本信息收集</h3>
-          <div style="text-align:left; margin:20px;">
-            <p><strong>学号：</strong><br>
-              <input type="text" id="pid" placeholder="例如：2024000100101" required>
-              <div id="pid-error" class="error-message">请填写学号</div>
-            </p>
-            <p><strong>年龄：</strong><br>
-              <input type="text" id="age" placeholder="例如：20" required>
-              <div id="age-error" class="error-message">请填写年龄</div>
-            </p>
-            <p><strong>性别：</strong><br>
-              <select id="gender" required>
-                <option value="">请选择</option>
-                <option value="男性">男性</option>
-                <option value="女性">女性</option>
-              </select>
-              <div id="gender-error" class="error-message">请选择性别</div>
-            </p>
-            <p><strong>惯用手：</strong><br>
-              <select id="hand" required>
-                <option value="">请选择</option>
-                <option value="左手">左手</option>
-                <option value="右手">右手</option>
-              </select>
-              <div id="hand-error" class="error-message">请选择惯用手</div>
-            </p>
-            <p><strong>是否有脑损伤史：</strong><br>
-              <select id="injury" required>
-                <option value="">请选择</option>
-                <option value="是">是</option>
-                <option value="否">否</option>
-              </select>
-              <div id="injury-error" class="error-message">请选择是否有脑损伤史</div>
-            </p>
-            <p><strong>手机号码：</strong><br>
-              <input type="text" id="phone" placeholder="例如：13812345678" required>
-              <div id="phone-error" class="error-message">请填写手机号码</div>
-            </p>
-          </div>
-          <button class="jspsych-btn" id="continue-btn" onclick="validateAndSave()">继续</button>
-        </div>
-      `,
-      choices: "NO_KEYS",
-      on_load: function() {
-        window.validateAndSave = function() {
-          // 获取所有输入值
-          var pid = document.getElementById('pid').value.trim();
-          var age = document.getElementById('age').value.trim();
-          var gender = document.getElementById('gender').value;
-          var hand = document.getElementById('hand').value;
-          var injury = document.getElementById('injury').value;
-          var phone = document.getElementById('phone').value.trim();
-          
-          // 重置错误信息
-          var errors = document.querySelectorAll('.error-message');
-          errors.forEach(function(error) {
-            error.style.display = 'none';
-          });
-          
-          // 验证所有字段
-          var isValid = true;
-          
-          if (!pid) {
-            document.getElementById('pid-error').style.display = 'block';
-            isValid = false;
-          }
-          
-          if (!age || isNaN(age)) {
-            document.getElementById('age-error').style.display = 'block';
-            isValid = false;
-          }
-          
-          if (!gender) {
-            document.getElementById('gender-error').style.display = 'block';
-            isValid = false;
-          }
-          
-          if (!hand) {
-            document.getElementById('hand-error').style.display = 'block';
-            isValid = false;
-          }
-          
-          if (!injury) {
-            document.getElementById('injury-error').style.display = 'block';
-            isValid = false;
-          }
-          
-          if (!phone) {
-            document.getElementById('phone-error').style.display = 'block';
-            isValid = false;
-          }
-          
-          if (!isValid) {
-            return; // 如果有错误，不继续
-          }
-          
-          // 保存数据
-          participant_id = pid;
-          participant_age = age;
-          participant_gender = gender;
-          participant_handedness = hand;
-          participant_brain_injury = injury;
-          participant_phone = phone;
-          
-          // 添加到jsPsych数据
-          jsPsych.data.addProperties({
-            participant_id: participant_id,
-            age: participant_age,
-            gender: participant_gender,
-            handedness: participant_handedness,
-            brain_injury_history: participant_brain_injury,
-            phone: participant_phone
-          });
-          
-          // 继续实验
-          jsPsych.finishTrial();
-        };
-      }
-    });
+  // ==================== Pre-survey ====================
+  var timeline_pre = [];
 
-    // 欢迎界面
-    timeline.push({
-      type: jsPsychHtmlKeyboardResponse,
-      stimulus: function() {
-        return `
-        <div style="text-align:center;">
-          <h2>欢迎参加面孔失认症指数问卷 (PI-20) 调查！</h2>
-          <div style="text-align:left; max-width:400px; margin:20px auto; padding:20px; background-color:#f5f5f5; border-radius:8box;">
-            <p><strong>您的学号:</strong> ${participant_id}</p> 
-            <p><strong>年龄:</strong> ${participant_age}</p>
-            <p><strong>性别:</strong> ${participant_gender}</p>
-            <p><strong>惯用手:</strong> ${participant_handedness}</p>
-            <p><strong>脑损伤史:</strong> ${participant_brain_injury}</p>
-            <p><strong>手机号码:</strong> ${participant_phone}</p>
-          </div>
-          <p>请确保以上信息正确无误。</p>
-          <p>按任意键开始问卷</p>
-        </div>
+  // a1. subject ID input
+  var subjid = {
+    type: jsPsychSurveyHtmlForm,
+    preamble: "<p>请输入您的学号/工号或身份证号码：</p>" +
+      "<p style='color: #444444;'> (如您没有学号/工号且不希望填写身份证信息，请输入“00000000”[共8位]，并牢记下一页面展示的被试编码。这将是后续研究验证您身份的重要凭证)</p>",
+    html: `
+    <input type="text" name="subjid" id="subjid" required 
+           placeholder="例如：2024000100101" style="width: 200px;"><br><br>
+    `,
+    autofocus: 'subjid',
+    on_finish: function (data) {
+      subj_id = data.response.subjid;
+      jsPsych.data.addProperties({ SubjCode: subj_id });
+      console.log("Subject ID: ", subj_id);
+    }
+  };
+  timeline_pre.push(subjid);
+
+  // 1.5 Show random ID screen indefinitely for anonymous IDs
+  var anon_id = jsPsych.randomization.randomID(15);
+  jsPsych.data.addProperties({ Anon_id: anon_id });
+  var show_or_skip_id = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: function () {
+      return `
+          <h2>您的实验编号是：</h2>
+          <h1 style="color: red;">${anon_id}</h1>
+          <p>请牢记此编号，后续研究需要使用此编号来验证您的身份。</p>
+          <p>按“空格”键继续。</p>
         `;
-      },
-      choices: "ALL_KEYS"
-    });
+    },
+    choices: [' '],
+    data: { task: 'anon_id_display' },
+    on_finish: function () {
+      // override SubjCode for anonymous participants
+      subj_id = anon_id;
+      jsPsych.data.addProperties({ SubjCode: subj_id });
+      console.log("Generated anonymous Subject ID: ", subj_id);
+    }
+  };
+  var if_node = {
+    timeline: [show_or_skip_id],
+    conditional_function: function () {
+      // check if the subj_id is the anonymous code
+      return subj_id === "00000000";
+    }
+  }
+  timeline_pre.push(if_node);
 
-    // 问卷指导语
-    timeline.push({
-      type: jsPsychHtmlKeyboardResponse,
-      stimulus: `
+  // a2. age input
+  var subjage = {
+    type: jsPsychSurveyHtmlForm,
+    preamble: "<p>请输入您的年龄：</p>",
+    html: `
+    <input type="text" name="age" id="age" pattern="^\\d{1,3}$" required 
+           placeholder="例如：20" style="width: 150px;"
+           title="请输入1到3位数字的年龄"><br><br>
+    `,
+    autofocus: 'age',
+    on_finish: function (data) {
+      subj_age = data.response.age;
+      jsPsych.data.addProperties({ Age: subj_age });
+      // Validate age range
+      if (subj_age < 18) {
+        // Display error message and abort experiment
+        jsPsych.abortExperiment("很遗憾，您目前还不符合本测验的年龄要求（需至少18岁）。" +
+          "<p>感谢您的时间。您现在可以关闭本页面。</p>");
+      }
+    }
+  };
+  timeline_pre.push(subjage);
+
+  // a3. sex selection
+  var subjsex = {
+    type: jsPsychSurveyMultiChoice,
+    questions: [
+      {
+        prompt: "您的性别是？",
+        options: ["男", "女"],
+        required: true,
+        name: 'sex'
+      }
+    ],
+    on_finish: function (data) {
+      subj_sex = data.response.sex;
+      jsPsych.data.addProperties({ Sex: subj_sex === "男" ? "male" : "female" });
+    }
+  };
+  timeline_pre.push(subjsex);
+
+  // a4. handedness selection
+  var subjhandedness = {
+    type: jsPsychSurveyMultiChoice,
+    questions: [
+      {
+        prompt: "您的惯用手/利手是（例如通常吃饭或写字使用哪只手）？",
+        options: ["左手", "右手"],
+        required: true,
+        name: 'handedness'
+      }
+    ],
+    on_finish: function (data) {
+      subj_handedness = data.response.handedness;
+      jsPsych.data.addProperties({ Handedness: subj_handedness === "左手" ? "left" : "right" });
+    }
+  };
+  timeline_pre.push(subjhandedness);
+
+  // a5. brain injury history
+  var subjbraininjury = {
+    type: jsPsychSurveyMultiChoice,
+    questions: [
+      {
+        prompt: "您有脑损伤史吗？",
+        options: ["是", "否"],
+        required: true,
+        name: 'brain_injury'
+      }
+    ],
+    on_finish: function (data) {
+      subj_brain_injury = data.response.brain_injury;
+      jsPsych.data.addProperties({ BrainInjury: subj_brain_injury === "是" ? "yes" : "no" });
+    }
+  };
+  timeline_pre.push(subjbraininjury);
+
+  // a6. phone number
+  var subjcontact = {
+    type: jsPsychSurveyHtmlForm,
+    preamble: "<p>如果您有兴趣参与本项目的后续研究，请输入您的手机号码：</p>" +
+      "<p style='color: #444444;'> (如您决定不参与后续研究，请输入“0”)</p>",
+    html: `
+    <input type="text" name="phone" id="phone" pattern="^(\\d{1}|\\d{11})$" require
+           placeholder="例如：13812345678" style="width: 150px;"
+           title="请输入11位数字的手机号码"><br><br>
+    `,
+    autofocus: 'phone',
+    on_finish: function (data) {
+      subj_contact = data.response.phone;
+      jsPsych.data.addProperties({ Contact: subj_contact });
+    }
+  };
+  timeline_pre.push(subjcontact);
+
+  var pre_summary = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: function () {
+      return `
+          <h1>欢迎参加面孔识别能力测验！</h1>
+          <br>
+          <p>您的学号: <strong>${subj_id}</strong></p> 
+          <p>年龄: <strong>${subj_age}</strong></p>
+          <p>性别: <strong>${subj_sex}</strong></p>
+          <p>利手: <strong>${subj_handedness}</strong></p>
+          <p>脑损伤史: <strong>${subj_brain_injury}</strong></p>
+          <p>手机号码: <strong>${subj_contact}</strong></p> 
+          <br>
+          <p>请确认以上信息是否正确？</p>
+
+          <div class="confirm-buttons">
+            <button class="jspsych-btn" id="confirm-edit">信息有误，需重新填写</button>
+            <button class="jspsych-btn" id="confirm-confirm">信息正确</button>
+          </div>
+        `
+    },
+    choices: "NO_KEYS", // do not use keys
+    data: { task: 'pre-survey-confirm' },
+    on_load: function () {
+      // 同意按钮逻辑
+      document.getElementById('confirm-confirm').addEventListener('click', function () {
+        jsPsych.finishTrial({ confirm: 'confirm' });
+      });
+
+      // 不同意按钮逻辑
+      document.getElementById('confirm-edit').addEventListener('click', function () {
+        // 显示拒绝参与的信息
+        jsPsych.finishTrial({ confirm: 'redo' });
+      });
+    },
+    on_finish: function (data) {
+      confirm_info = jsPsych.data.get().filter({ task: 'pre-survey-confirm' }).last(1).values()[0].confirm;
+    }
+  };
+  timeline_pre.push(pre_summary);
+
+  // Add pre-survey timeline to the main timeline with potential loops
+  timeline.push({
+    timeline: timeline_pre,
+    loop_function: function () {
+      // continue looping if not all information is correct
+      return confirm_info !== "confirm";
+    }
+  });
+
+  // ==================== Main Experiment ====================
+  // 问卷指导语
+  timeline.push({
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: `
         <div style="text-align:center;">
-          <h2>面孔失认症指数问卷 (PI-20)</h2>
+          <h2>面孔识别问卷 (PI-20)</h2>
           <p>接下来您将看到一系列关于面孔识别能力的描述。</p>
           <p>请评价每项描述与您的符合程度，并选择最符合您情况的选项。</p>
-          <p>请仔细阅读每一个条目，并尽可能诚实作答。谢谢！</p>
+          <p>请仔细阅读每一个条目，并诚实作答。谢谢！</p>
           <p>按任意键开始</p>
         </div>
       `,
-      choices: "ALL_KEYS"
-    });
+    choices: "ALL_KEYS"
+  });
 
-    // ============= 问卷部分 - 使用jsPsych Likert插件 =============
-    
-    // 第1-5题
-    timeline.push({
-      type: jsPsychSurveyLikert,
-      questions: [
-        {prompt: "1. 我的面孔识别能力比大多数人都要差。", name: 'Q1', labels: likert_scale, required: true},
-        {prompt: "2. 我对面孔的记忆总是很糟糕。", name: 'Q2', labels: likert_scale, required: true},
-        {prompt: "3. 我发现认出具有独特面部特征的人明显要更容易。", name: 'Q3', labels: likert_scale, required: true},
-        {prompt: "4. 我经常把我以前见过的人误认为是陌生人。", name: 'Q4', labels: likert_scale, required: true},
-        {prompt: "5. 当我在上学的时候，我很难认出我的同学。", name: 'Q5', labels: likert_scale, required: true}
-      ],
-      randomize_question_order: false
-    });
+  // ============= 问卷部分 - 使用jsPsych Likert插件 =============
+  const allAnswers = {};
 
-    // 第6-10题
-    timeline.push({
-      type: jsPsychSurveyLikert,
-      questions: [
-        {prompt: "6. 当人们换发型，或者戴帽子的时候，我就很难再认出他们。", name: 'Q6', labels: likert_scale, required: true},
-        {prompt: "7. 我有时不得不提醒刚认识的人，我识别面孔能力很差。", name: 'Q7', labels: likert_scale, required: true},
-        {prompt: "8. 我觉得在脑海中想象出某个人的面孔很容易。", name: 'Q8', labels: likert_scale, required: true},
-        {prompt: "9. 我比大多数人更擅长将一个人的名字与他的面孔相对应。", name: 'Q9', labels: likert_scale, required: true},
-        {prompt: "10. 如果没有听到对方的声音，我就很难认出他们。", name: 'Q10', labels: likert_scale, required: true}
-      ],
-      randomize_question_order: false
-    });
-
-    // 第11-15题
-    timeline.push({
-      type: jsPsychSurveyLikert,
-      questions: [
-        {prompt: "11. 对面孔识别的焦虑已经导致我会有意避开某些社交和职业场合。", name: 'Q11', labels: likert_scale, required: true},
-        {prompt: "12. 我必须比其他人更努力地去记忆面孔。", name: 'Q12', labels: likert_scale, required: true},
-        {prompt: "13. 我对自己从照片中认出自己的能力非常有信心。", name: 'Q13', labels: likert_scale, required: true},
-        {prompt: "14. 因为识别角色的困难，我有时会觉得很难跟上电影剧情。", name: 'Q14', labels: likert_scale, required: true},
-        {prompt: "15. 我的朋友和家人都认为我的面孔识别或面孔记忆能力很差。", name: 'Q15', labels: likert_scale, required: true}
-      ],
-      randomize_question_order: false
-    });
-
-    // 第16-20题
-    timeline.push({
-      type: jsPsychSurveyLikert,
-      questions: [
-        {prompt: "16. 因为没有认出对方是谁，我经常觉得自己冒犯了别人。", name: 'Q16', labels: likert_scale, required: true},
-        {prompt: "17. 在要求人们穿相同衣服（比如穿西装、制服或泳衣）的场合中，认人对我来说很容易。", name: 'Q17', labels: likert_scale, required: true},
-        {prompt: "18. 在家庭聚会上，我有时会混淆某些家庭成员。", name: 'Q18', labels: likert_scale, required: true},
-        {prompt: "19. 我觉得即使名人已经发生了很大的变化，我也很容易把他们从'成名前'的照片中认出来。", name: 'Q19', labels: likert_scale, required: true},
-        {prompt: "20. 当我在陌生的场景遇到之前熟悉的人时，我很难认出他们（例如在购物时意外遇到一个同事）。", name: 'Q20', labels: likert_scale, required: true}
-      ],
-      randomize_question_order: false
-    });
-
-    // 实验结束 - 自动保存页面
-    timeline.push({
-      type: jsPsychHtmlKeyboardResponse,
-      stimulus: `
-        <div style="text-align:center; padding:50px;">
-          <h2>问卷结束，感谢您的参与！</h2>
-          <p>数据正在自动保存中，请稍候...</p>
-          <div id="download-status" class="loading-message">正在准备保存数据...</div>
-          <p>保存完成后，您可以关闭本页面。</p>
-        </div>
-      `,
-      choices: "NO_KEYS",
-      on_load: function() {
-        // 显示保存状态
-        var statusDiv = document.getElementById('download-status');
-        if (statusDiv) {
-          statusDiv.innerHTML = "正在生成数据文件...";
-        }
-        
-        // 延迟后自动触发保存
-        setTimeout(function() {
-          if (statusDiv) {
-            statusDiv.innerHTML = "正在保存...";
-          }
-          
-          try {
-            var saved = saveData();
-            
-            if (statusDiv) {
-              if (saved) {
-                statusDiv.className = 'success-message';
-                statusDiv.innerHTML = "✓ 数据已成功保存！";
-              } else {
-                statusDiv.className = 'error-message';
-                statusDiv.innerHTML = "⚠ 保存失败，请刷新页面重试";
-              }
-            }
-          } catch (error) {
-            console.error("保存数据时出错:", error);
-            if (statusDiv) {
-              statusDiv.className = 'error-message';
-              statusDiv.innerHTML = "⚠ 保存出错: " + error.message;
-            }
-          }
-        }, 1000);
+  // 第1-5题
+  timeline.push({
+    type: jsPsychSurveyLikert,
+    questions: [
+      { prompt: "1. 我的面孔识别能力比大多数人都要差。", name: 'Q1', labels: likert_scale, required: true },
+      { prompt: "2. 我对面孔的记忆总是很糟糕。", name: 'Q2', labels: likert_scale, required: true },
+      { prompt: "3. 我发现认出具有独特面部特征的人明显要更容易。", name: 'Q3', labels: likert_scale, required: true },
+      { prompt: "4. 我经常把我以前见过的人误认为是陌生人。", name: 'Q4', labels: likert_scale, required: true },
+      { prompt: "5. 当我在上学的时候，我很难认出我的同学。", name: 'Q5', labels: likert_scale, required: true }
+    ],
+    randomize_question_order: false,
+    on_finish: function (data) {
+      if (data.response) {
+        Object.assign(allAnswers, data.response);
       }
-    });
+    }
+  });
 
-    jsPsych.run(timeline);
-  </script>
+  // 第6-10题
+  timeline.push({
+    type: jsPsychSurveyLikert,
+    questions: [
+      { prompt: "6. 当人们换发型，或者戴帽子的时候，我就很难再认出他们。", name: 'Q6', labels: likert_scale, required: true },
+      { prompt: "7. 我有时不得不提醒刚认识的人，我识别面孔能力很差。", name: 'Q7', labels: likert_scale, required: true },
+      { prompt: "8. 我觉得在脑海中想象出某个人的面孔很容易。", name: 'Q8', labels: likert_scale, required: true },
+      { prompt: "9. 我比大多数人更擅长将一个人的名字与他的面孔相对应。", name: 'Q9', labels: likert_scale, required: true },
+      { prompt: "10. 如果没有听到对方的声音，我就很难认出他们。", name: 'Q10', labels: likert_scale, required: true }
+    ],
+    randomize_question_order: false,
+    on_finish: function (data) {
+      if (data.response) {
+        Object.assign(allAnswers, data.response);
+      }
+    }
+  });
+
+  // 第11-15题
+  timeline.push({
+    type: jsPsychSurveyLikert,
+    questions: [
+      { prompt: "11. 对面孔识别的焦虑已经导致我会有意避开某些社交和职业场合。", name: 'Q11', labels: likert_scale, required: true },
+      { prompt: "12. 我必须比其他人更努力地去记忆面孔。", name: 'Q12', labels: likert_scale, required: true },
+      { prompt: "13. 我对自己从照片中认出自己的能力非常有信心。", name: 'Q13', labels: likert_scale, required: true },
+      { prompt: "14. 因为识别角色的困难，我有时会觉得很难跟上电影剧情。", name: 'Q14', labels: likert_scale, required: true },
+      { prompt: "15. 我的朋友和家人都认为我的面孔识别或面孔记忆能力很差。", name: 'Q15', labels: likert_scale, required: true }
+    ],
+    randomize_question_order: false,
+    on_finish: function (data) {
+      if (data.response) {
+        Object.assign(allAnswers, data.response);
+      }
+    }
+  });
+
+  // 第16-20题
+  timeline.push({
+    type: jsPsychSurveyLikert,
+    questions: [
+      { prompt: "16. 因为没有认出对方是谁，我经常觉得自己冒犯了别人。", name: 'Q16', labels: likert_scale, required: true },
+      { prompt: "17. 在要求人们穿相同衣服（比如穿西装、制服或泳衣）的场合中，认人对我来说很容易。", name: 'Q17', labels: likert_scale, required: true },
+      { prompt: "18. 在家庭聚会上，我有时会混淆某些家庭成员。", name: 'Q18', labels: likert_scale, required: true },
+      { prompt: "19. 我觉得即使名人已经发生了很大的变化，我也很容易把他们从'成名前'的照片中认出来。", name: 'Q19', labels: likert_scale, required: true },
+      { prompt: "20. 当我在陌生的场景遇到之前熟悉的人时，我很难认出他们（例如在购物时意外遇到一个同事）。", name: 'Q20', labels: likert_scale, required: true }
+    ],
+    randomize_question_order: false,
+    on_finish: function (data) {
+      // 1. 保存Q16-Q20答案到全局
+      if (data.response) {
+        Object.assign(allAnswers, data.response);
+      }
+
+      // 2. 将全局的allAnswers添加到data对象的独立列
+      // 这样jsPsych会自动将这些作为数据列保存
+      for (let i = 1; i <= 20; i++) {
+        const qKey = `Q${i}`;
+        data[qKey] = allAnswers[qKey] + 1 || '';
+      }
+      // add allData = True in data.response
+      if (data.response) {
+        data.allData = 'true';
+      }
+    }
+  });
+
+  // experiment end and upload data
+  timeline.push(save_data = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: `
+        <p>测验结束，感谢您的参与！</p>
+        <p>请按任意键开始上传数据...</p>
+      `,
+    choices: "ALL_KEYS",
+    data: { task: 'upload_data' },
+    on_finish: function () {
+      var filename = `${exp_name}_${subj_id}_${getLocalTimestamp()}`;
+      if (isBaoleiji) {
+        // upload clean data to server
+        saveData(
+          jsPsych.data.get().filter([{ allData: 'true' }]).filterColumns([
+            'SubjCode', 'Anon_id', 'ExpName', 'isBaoleiji', 'Browser', 'StartsAt',
+            'Age', 'Sex', 'Handedness', 'BrainInjury', 'Contact',
+            'Q1', 'Q2', 'Q3', 'Q4', 'Q5',
+            'Q6', 'Q7', 'Q8', 'Q9', 'Q10',
+            'Q11', 'Q12', 'Q13', 'Q14', 'Q15',
+            'Q16', 'Q17', 'Q18', 'Q19', 'Q20'
+          ]).csv(),
+          `${filename}.csv`
+        );
+        // upload data backup to server
+        saveData(
+          jsPsych.data.get().csv(),
+          `${filename}_backup.csv`
+        );
+      } else if (isCredamo) {
+        onCredamoEndTrialFinish(jsPsych.data.get().csv());
+      } else {
+        // save data locally
+        jsPsych.data.get().filter([{ allData: 'true' }]).filterColumns([
+          'SubjCode', 'Anon_id', 'ExpName', 'isBaoleiji', 'Browser', 'StartsAt',
+          'Age', 'Sex', 'Handedness', 'BrainInjury', 'Contact',
+          'Q1', 'Q2', 'Q3', 'Q4', 'Q5',
+          'Q6', 'Q7', 'Q8', 'Q9', 'Q10',
+          'Q11', 'Q12', 'Q13', 'Q14', 'Q15',
+          'Q16', 'Q17', 'Q18', 'Q19', 'Q20'
+        ]).localSave('csv', `${filename}.csv`);
+        // save data backup locally
+        jsPsych.data.get().localSave('csv', `${filename}_backup.csv`);
+      }
+    }
+  });
+
+  // exit fullscreen mode
+  timeline.push({
+    type: jsPsychFullscreen,
+    fullscreen_mode: false,
+    data: { trial_frame: 'keyinfo' },
+    on_finish: function (data) {
+      data.totaltime = (jsPsych.getTotalTime() / 60000).toFixed(2);
+    }
+  });
+
+  // show cursor
+  timeline.push(cursor_on);
+
+  // 实验结束
+  timeline.push({
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: `
+        <p>测验数据已上传完成。</p>
+        <p>再次感谢您的参与！</p>
+        <p>按任意键退出</p>
+      `,
+    choices: "ALL_KEYS",
+    data: { task: 'experiment_end' }
+  });
+  // ==================== 运行实验 ====================
+  jsPsych.run(timeline);
+
+</script>
 </html>
