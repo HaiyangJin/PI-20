@@ -6,7 +6,7 @@
   <title>面孔识别问卷</title>
   <script src="lib/jspsych-8.2.2/jspsych.js"></script>
   <script src="lib/jspsych-8.2.2/plugin-html-keyboard-response.js"></script>
-  <script src="lib/jspsych-8.2.2/plugin-image-keyboard-response.js"></script>
+  <script src="lib/jspsych-8.2.2/plugin-html-button-response.js"></script>
   <script src="lib/jspsych-8.2.2/plugin-browser-check.js"></script>
   <script src="lib/jspsych-8.2.2/plugin-preload.js"></script>
   <script src="lib/jspsych-8.2.2/plugin-survey-text.js"></script>
@@ -313,8 +313,6 @@
   function getQuestionsPerPage() {
     const screenWidth = window.innerWidth;
     if (screenWidth < 768) { // 手机
-      return 2;
-    } else if (screenWidth < 1000) { // 平板
       return 4;
     } else { // 电脑
       return 5;
@@ -327,19 +325,18 @@
 
   console.log(`问卷分页: ${totalQuestions}题，每页${questionsPerPage}题，共${totalPages}页`);
 
-  // 问卷指导语
+  // 问卷指导语  
   timeline.push({
-    type: jsPsychHtmlKeyboardResponse,
+    type: jsPsychHtmlButtonResponse,
     stimulus: `
         <div style="text-align:center;">
           <h2>面孔识别问卷</h2>
           <p>接下来您将看到一系列关于面孔识别能力的描述。</p>
           <p>请评价每项描述与您的符合程度，并选择最符合您情况的选项。</p>
           <p>请仔细阅读每一个条目，并诚实作答。谢谢！</p>
-          <p>按任意键开始</p>
         </div>
       `,
-    choices: "ALL_KEYS"
+    choices: ['开始测验']
   });
 
   // ============= 问卷部分 - 使用jsPsych Likert插件 =============
@@ -391,12 +388,12 @@
 
   // experiment end and upload data
   timeline.push(save_data = {
-    type: jsPsychHtmlKeyboardResponse,
+    type: jsPsychHtmlButtonResponse,
     stimulus: `
         <p>测验结束，感谢您的参与！</p>
-        <p>请按任意键开始上传数据...</p>
+        <p>请按下方按钮上传您的测验数据。</p>
       `,
-    choices: "ALL_KEYS",
+    choices: ['开始上传数据...'],
     data: { task: 'upload_data' },
     on_finish: function () {
       var filename = `${exp_name}_${subj_id}_${getLocalTimestamp()}`;
@@ -451,13 +448,12 @@
 
   // 实验结束
   timeline.push({
-    type: jsPsychHtmlKeyboardResponse,
+    type: jsPsychHtmlButtonResponse,
     stimulus: `
         <p>测验数据已上传完成。</p>
         <p>再次感谢您的参与！</p>
-        <p>按任意键退出</p>
       `,
-    choices: "ALL_KEYS",
+    choices:['退出测验'], 
     data: { task: 'experiment_end' }
   });
   // ==================== 运行实验 ====================
