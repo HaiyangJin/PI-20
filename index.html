@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="css/style.css">
   <!-- load js codes for the task -->
   <script type="text/javascript" src="param/param.js"></script>
+  <script type="text/javascript" src="param/stimuli.js"></script>
   <script type="text/javascript" src="param/consent.js"></script>
   <script type="text/javascript" src="param/utils.js"></script>
 </head>
@@ -261,7 +262,7 @@
     type: jsPsychHtmlKeyboardResponse,
     stimulus: function () {
       return `
-          <h1>欢迎参加面孔识别能力测验！</h1>
+          <h1>欢迎参加本测验！</h1>
           <br>
           <p>您的学号: <strong>${subj_id}</strong></p> 
           <p>年龄: <strong>${subj_age}</strong></p>
@@ -308,12 +309,30 @@
   });
 
   // ==================== Main Experiment ====================
+  // 根据屏幕宽度动态调整每页问题数
+  function getQuestionsPerPage() {
+    const screenWidth = window.innerWidth;
+    if (screenWidth < 768) { // 手机
+      return 2;
+    } else if (screenWidth < 1000) { // 平板
+      return 4;
+    } else { // 电脑
+      return 5;
+    }
+  }
+  const questionsPerPage = getQuestionsPerPage();
+  // 计算总页数
+  const totalQuestions = pi20_questions.length;
+  const totalPages = Math.ceil(totalQuestions / questionsPerPage);
+
+  console.log(`问卷分页: ${totalQuestions}题，每页${questionsPerPage}题，共${totalPages}页`);
+
   // 问卷指导语
   timeline.push({
     type: jsPsychHtmlKeyboardResponse,
     stimulus: `
         <div style="text-align:center;">
-          <h2>面孔识别问卷 (PI-20)</h2>
+          <h2>面孔识别问卷</h2>
           <p>接下来您将看到一系列关于面孔识别能力的描述。</p>
           <p>请评价每项描述与您的符合程度，并选择最符合您情况的选项。</p>
           <p>请仔细阅读每一个条目，并诚实作答。谢谢！</p>
@@ -326,89 +345,49 @@
   // ============= 问卷部分 - 使用jsPsych Likert插件 =============
   const allAnswers = {};
 
-  // 第1-5题
-  timeline.push({
-    type: jsPsychSurveyLikert,
-    questions: [
-      { prompt: "1. 我的面孔识别能力比大多数人都要差。", name: 'Q1', labels: likert_scale, required: true },
-      { prompt: "2. 我对面孔的记忆总是很糟糕。", name: 'Q2', labels: likert_scale, required: true },
-      { prompt: "3. 我发现认出具有独特面部特征的人明显要更容易。", name: 'Q3', labels: likert_scale, required: true },
-      { prompt: "4. 我经常把我以前见过的人误认为是陌生人。", name: 'Q4', labels: likert_scale, required: true },
-      { prompt: "5. 当我在上学的时候，我很难认出我的同学。", name: 'Q5', labels: likert_scale, required: true }
-    ],
-    randomize_question_order: false,
-    on_finish: function (data) {
-      if (data.response) {
-        Object.assign(allAnswers, data.response);
-      }
-    }
-  });
+  // 循环创建每个页面
+  for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+    const startIdx = pageIndex * questionsPerPage;
+    const endIdx = Math.min(startIdx + questionsPerPage, totalQuestions);
 
-  // 第6-10题
-  timeline.push({
-    type: jsPsychSurveyLikert,
-    questions: [
-      { prompt: "6. 当人们换发型，或者戴帽子的时候，我就很难再认出他们。", name: 'Q6', labels: likert_scale, required: true },
-      { prompt: "7. 我有时不得不提醒刚认识的人，我识别面孔能力很差。", name: 'Q7', labels: likert_scale, required: true },
-      { prompt: "8. 我觉得在脑海中想象出某个人的面孔很容易。", name: 'Q8', labels: likert_scale, required: true },
-      { prompt: "9. 我比大多数人更擅长将一个人的名字与他的面孔相对应。", name: 'Q9', labels: likert_scale, required: true },
-      { prompt: "10. 如果没有听到对方的声音，我就很难认出他们。", name: 'Q10', labels: likert_scale, required: true }
-    ],
-    randomize_question_order: false,
-    on_finish: function (data) {
-      if (data.response) {
-        Object.assign(allAnswers, data.response);
-      }
-    }
-  });
+    // 获取当前页的问题
+    const currentQuestions = pi20_questions.slice(startIdx, endIdx);
 
-  // 第11-15题
-  timeline.push({
-    type: jsPsychSurveyLikert,
-    questions: [
-      { prompt: "11. 对面孔识别的焦虑已经导致我会有意避开某些社交和职业场合。", name: 'Q11', labels: likert_scale, required: true },
-      { prompt: "12. 我必须比其他人更努力地去记忆面孔。", name: 'Q12', labels: likert_scale, required: true },
-      { prompt: "13. 我对自己从照片中认出自己的能力非常有信心。", name: 'Q13', labels: likert_scale, required: true },
-      { prompt: "14. 因为识别角色的困难，我有时会觉得很难跟上电影剧情。", name: 'Q14', labels: likert_scale, required: true },
-      { prompt: "15. 我的朋友和家人都认为我的面孔识别或面孔记忆能力很差。", name: 'Q15', labels: likert_scale, required: true }
-    ],
-    randomize_question_order: false,
-    on_finish: function (data) {
-      if (data.response) {
-        Object.assign(allAnswers, data.response);
-      }
-    }
-  });
+    // 计算当前页的问题编号范围
+    const firstQuestionNum = startIdx + 1;
+    const lastQuestionNum = endIdx;
 
-  // 第16-20题
-  timeline.push({
-    type: jsPsychSurveyLikert,
-    questions: [
-      { prompt: "16. 因为没有认出对方是谁，我经常觉得自己冒犯了别人。", name: 'Q16', labels: likert_scale, required: true },
-      { prompt: "17. 在要求人们穿相同衣服（比如穿西装、制服或泳衣）的场合中，认人对我来说很容易。", name: 'Q17', labels: likert_scale, required: true },
-      { prompt: "18. 在家庭聚会上，我有时会混淆某些家庭成员。", name: 'Q18', labels: likert_scale, required: true },
-      { prompt: "19. 我觉得即使名人已经发生了很大的变化，我也很容易把他们从'成名前'的照片中认出来。", name: 'Q19', labels: likert_scale, required: true },
-      { prompt: "20. 当我在陌生的场景遇到之前熟悉的人时，我很难认出他们（例如在购物时意外遇到一个同事）。", name: 'Q20', labels: likert_scale, required: true }
-    ],
-    randomize_question_order: false,
-    on_finish: function (data) {
-      // 1. 保存Q16-Q20答案到全局
-      if (data.response) {
-        Object.assign(allAnswers, data.response);
-      }
+    // 创建当前页的试次
+    timeline.push({
+      type: jsPsychSurveyLikert,
+      questions: currentQuestions,
+      randomize_question_order: false,
+      on_finish: function (data) {
+        // 保存当前页的答案到全局对象
+        if (data.response) {
+          Object.assign(allAnswers, data.response);
+        }
 
-      // 2. 将全局的allAnswers添加到data对象的独立列
-      // 这样jsPsych会自动将这些作为数据列保存
-      for (let i = 1; i <= 20; i++) {
-        const qKey = `Q${i}`;
-        data[qKey] = allAnswers[qKey] + 1 || '';
+        // 如果是最后一页，将所有答案添加到当前试次的独立列中
+        if (pageIndex === totalPages - 1) {
+          console.log("最后一页，正在合并所有答案...");
+
+          // 将全局存储的所有答案作为独立列添加到当前试次数据
+          // 这样在最终的数据中，这一行就会有Q1-Q20的所有列
+          for (let qNum = 1; qNum <= totalQuestions; qNum++) {
+            const qKey = `Q${qNum}`;
+            if (allAnswers[qKey] !== undefined) {
+              // 将答案添加到data对象，jsPsych会自动将其保存为独立的数据列
+              data[qKey] = allAnswers[qKey]+1; // +1调整为1-5评分
+            }
+          }
+
+          // 添加合并标识
+          data.allData = 'true';
+        }
       }
-      // add allData = True in data.response
-      if (data.response) {
-        data.allData = 'true';
-      }
-    }
-  });
+    });
+  }
 
   // experiment end and upload data
   timeline.push(save_data = {
@@ -485,4 +464,5 @@
   jsPsych.run(timeline);
 
 </script>
+
 </html>

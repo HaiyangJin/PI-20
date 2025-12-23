@@ -11,15 +11,6 @@ if (window.location.hostname.startsWith('10.12.3.158')) {
 }
 const exp_name = "PI20";
 
-// Likert量表选项
-var likert_scale = [
-    "完全不符合",
-    "基本不符合",
-    "一般/中度",
-    "基本符合",
-    "完全符合"
-];
-
 // ZSTU Baoleiji
 const url_zstublj = 'http://10.12.3.158/facetest/lib/save_data.php'; // zstu baoleiji server
 
